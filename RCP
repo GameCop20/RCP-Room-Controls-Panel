@@ -1,295 +1,830 @@
 // ==UserScript==
-// @name         ПКК - Панель Контроля Комнаты от GameCop20
-// @name:en      RCP - Room Control Panel by GameCop20
-// @version      1.0.0
-// @description  Панель контроли комнаты для MPP
-// @description:en Room Controls panel for MPP
-// @author       GameCop20
-// @license      GPL-3.0-or-later
+// @name         ПКК - Панель контроля комнаты - от GameCop20
+// @name:en      RCP - Room Control Panel - by GameCop20
+// @version      0.1.0
+// @devversion   0.6.0
+// @description  Панель контроля комнаты, созданная для более удобного контроля комнат. За основу взят скрипт КПМ - Настраиваемые кнопки MPP от gtnntg
+// @description:en Room Control Panel, created for more comfort controlling in room. The original script is CMB - Custom MPP Buttons - by gtnntg
+// @author       gtnntg
+// @remixauthor  GameCop20
+// @license      MIT
 // @namespace    https://vscode.dev/?connectTo=tampermonkey
-// @match        *://multiplayerpiano.net/*
 // @match        *://multiplayerpiano.org/*
-// @require      file:///Path
+// @match        *://multiplayerpiano.net/*
+// @match        *://piano.ourworldofpixels.com/*
+// @match        *://playground-mpp.hyye.tk/*
+// @match        *://rgbmpp.qwerty0301.repl.co/*
+// @match        *://mpp.hyye.tk/*
 // @grant        GM_setValue
 // @grant        GM_getValue
 // ==/UserScript==
-
+/* globals MPP */
+ 
 /*---------[Author info]-------------
- [discord: gtnntg, gamecop20]
- [e-mail: developer.georgiyshvedov@mail.ru, MatvijPC@outlook.com] <-- best
- [github: https://github.com/gtnntg2009, https://github.com/gamecop20]
+ [Discord: gtnntg]
+ [E-Mail: developer.georgiyshvedov@mail.ru]
+ [GitHub: https://github.com/gtnntg2009]
 --------------------------------------*/
-
+/*---------[Remix Author info]-------------
+ [Discord: gamecop20]
+ [E-Mail: MatvijPC@outlook.com]
+ [GitHub: https://github.com/GameCop20]
+--------------------------------------*/
 /*---------[RU:info]------------
-настоящая версия скрипта: 0.5.1
-
+настоящая версия скрипта: 0.6.0
+ 
 Лицензия и авторское право:
-Copyright (C) 2024 Georgiy Shvedov (developer.georgiyshvedov@mail.ru)
-
+Copyright (C) 2024  Georgiy Shvedov (developer.georgiyshvedov@mail.ru)
+ 
 Эта программа является свободным программным обеспечением: вы можете распространять ее и/или модифицировать
-ее в соответствии с условиями GNU General Public License, опубликованной Free Software Foundation,
-в версии 3 лицензии или (по вашему выбору) любой последующей версии.
-
+ее в соответствии с условиями MIT License.
+ 
 Эта программа распространяется в надежде, что она будет полезной,
 но БЕЗ КАКИХ-ЛИБО ГАРАНТИЙ; даже без подразумеваемой гарантии
 ТОВАРНОГО ВИДА или ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННЫХ ЦЕЛЕЙ. См.
-GNU General Public License для получения более подробных сведений.
-
-Вы должны были получить копию GNU General Public License
+MIT License для получения более подробных сведений.
+ 
+Вы должны были получить копию MIT License
 вместе с этой программой. Если нет, см.
-<https://www.gnu.org/licenses/>.
-
-В @require вставьте путь к своему файлу (Желательно поместить в свою папку, а затем скопировать туда путь через VSCode, у кого его нету я оставлю весь код в режиме комментарий.
+<https://opensource.org/licenses/MIT>.
 -----------------------------*/
-
+ 
 /*---------[EN:info]------------
-Current script version: 0.5.1
-
+Current script version: 0.6.0
+ 
 License and Copyright:
 Copyright (C) 2024 Georgiy Shvedov (developer.georgiyshvedov@mail.ru)
-
+ 
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
+it under the terms of the MIT License.
+ 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-In the @require, paste the path to your file (It is advisable to put it in your folder, and then copy the path there via VSCode, who does not have it, I will leave all the code in comment mode.
+MIT License for more details.
+ 
+You should have received a copy of the MIT License
+along with this program. If not, see <https://opensource.org/licenses/MIT>.
 -----------------------------*/
-
-/*
+ 
+//-------script-----------
 (function() {
     'use strict';
-
-    const settingsKey = 'customMppButtonsSettings';
-    const defaultSettings = {
-        panels: [
+ 
+    // CSS для панелей и кнопок
+    const CSS = `
+    :root {
+        --panel-bg-color: rgba(255, 255, 255, 0.9);
+        --panel-header-color: rgba(51, 51, 51, 0.9);
+        --panel-header-text-color: #ffffff;
+        --button-bg-color: rgba(0, 123, 255, 0.9);
+        --button-text-color: #ffffff;
+        --category-bg-color: rgba(255, 255, 255, 0.5); /* Прозрачный фон для подзаголовков */
+        --border-radius: 5px; /* Закругление краев */
+    }
+ 
+    .custom-panel {
+        position: fixed;
+        top: 20px;
+        left: 0;
+        width: 250px;
+        background-color: var(--panel-bg-color);
+        border: 1px solid #ccc;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        display: none;
+        overflow: hidden;
+        border-radius: var(--border-radius);
+    }
+ 
+    .panel-header {
+        background-color: var(--panel-header-color);
+        color: var(--panel-header-text-color);
+        padding: 10px;
+        font-weight: bold;
+        cursor: move;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+    }
+ 
+    .custom-button {
+        background-color: var(--button-bg-color);
+        color: var(--button-text-color);
+        border: none;
+        padding: 10px;
+        margin: 5px;
+        cursor: pointer;
+        border-radius: var(--border-radius);
+        display: block;
+        width: calc(100% - 20px);
+        box-sizing: border-box;
+    }
+ 
+    .panel-category {
+        background-color: var(--category-bg-color); /* Прозрачный фон */
+        padding: 10px;
+        font-weight: bold;
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 5px;
+        border-radius: var(--border-radius); /* Закругленные углы */
+    }
+ 
+    .panel-content {
+        padding: 10px;
+    }
+ 
+    .slide-panel {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 300px;
+        height: 100%;
+        background: var(--panel-bg-color);
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        overflow: hidden;
+        z-index: 1001;
+        display: flex;
+        flex-direction: column;
+        border-radius: var(--border-radius);
+    }
+ 
+    .slide-panel.open {
+        transform: translateX(0);
+    }
+ 
+    .close-button {
+        background: red;
+        color: white;
+        border: none;
+        padding: 10px;
+        cursor: pointer;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        border-radius: 50%;
+        z-index: 1002;
+    }
+ 
+    .toggle-button {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        background: var(--panel-header-color);
+        color: var(--panel-header-text-color);
+        border: none;
+        padding: 10px;
+        cursor: pointer;
+        border-radius: var(--border-radius);
+        z-index: 1002;
+    }
+ 
+    .style-customizer {
+        margin: 20px;
+        padding: 10px;
+        background: var(--panel-bg-color);
+        border: 1px solid #ccc;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        border-radius: var(--border-radius);
+    }
+ 
+    .style-section {
+        margin-bottom: 15px;
+    }
+ 
+    .field-container {
+        margin-bottom: 10px;
+    }
+ 
+    .field-container label {
+        display: block;
+        margin-bottom: 5px;
+    }
+ 
+    .field-container input[type="color"],
+    .field-container input[type="range"] {
+        width: 100%;
+    }
+    `;
+ 
+    // Добавление стилей в документ
+    const styleSheet = document.createElement('style');
+    styleSheet.type = 'text/css';
+    styleSheet.innerText = CSS;
+    document.head.appendChild(styleSheet);
+ 
+    // Переменные для настроек стилей
+    const DEFAULT_STYLES = {
+        panelBackgroundColor: 'rgba(255, 255, 255, 0.9)',
+        panelHeaderColor: 'rgba(51, 51, 51, 0.9)',
+        panelHeaderTextColor: '#ffffff',
+        buttonBackgroundColor: 'rgba(0, 123, 255, 0.9)',
+        buttonTextColor: '#ffffff',
+        categoryBackgroundColor: 'rgba(255, 255, 255, 0.5)', /* Прозрачный фон для подзаголовков */
+        borderRadius: '5px'
+    };
+ 
+    // Проверка активности скрипта
+    const SCRIPT_ACTIVE_KEY = 'scriptActive';
+    function isScriptActive() {
+        return GM_getValue(SCRIPT_ACTIVE_KEY, true);
+    }
+ 
+    // Функция для активации/деактивации скрипта
+    function setScriptActive(state) {
+        GM_setValue(SCRIPT_ACTIVE_KEY, state);
+        if (state) {
+            showPanels();
+            createSlidePanel();
+        } else {
+            hidePanels();
+        }
+    }
+ 
+    // Получение и сохранение стилей
+    function getStyles() {
+        return GM_getValue('panelStyles', DEFAULT_STYLES);
+    }
+ 
+    function setStyles(styles) {
+        GM_setValue('panelStyles', styles);
+        applyStyles();
+    }
+ 
+    // Применение стилей
+    function applyStyles() {
+        const styles = getStyles();
+        document.documentElement.style.setProperty('--panel-bg-color', styles.panelBackgroundColor);
+        document.documentElement.style.setProperty('--panel-header-color', styles.panelHeaderColor);
+        document.documentElement.style.setProperty('--panel-header-text-color', styles.panelHeaderTextColor);
+        document.documentElement.style.setProperty('--button-bg-color', styles.buttonBackgroundColor);
+        document.documentElement.style.setProperty('--button-text-color', styles.buttonTextColor);
+        document.documentElement.style.setProperty('--category-bg-color', styles.categoryBackgroundColor); /* Прозрачный фон для подзаголовков */
+        document.documentElement.style.setProperty('--border-radius', styles.borderRadius);
+    }
+ 
+    // Создание панели
+    function createPanel(title, id, categories) {
+        const panel = document.createElement('div');
+        panel.id = id;
+        panel.className = 'custom-panel';
+ 
+        const header = document.createElement('div');
+        header.className = 'panel-header';
+        header.textContent = title;
+        panel.appendChild(header);
+ 
+        // Создание контента для панелей
+        const panelContent = document.createElement('div');
+        panelContent.className = 'panel-content';
+        categories.forEach(category => {
+            const categoryHeader = document.createElement('div');
+            categoryHeader.className = 'panel-category';
+            categoryHeader.textContent = category.title;
+            panelContent.appendChild(categoryHeader);
+ 
+            category.buttons.forEach(button => {
+                const btn = createButton(button.text, button.action);
+                panelContent.appendChild(btn);
+            });
+        });
+ 
+        panel.appendChild(panelContent);
+        document.body.appendChild(panel);
+        makeElementDraggable(panel, header);
+ 
+        return panel;
+    }
+ 
+    // Функция для создания кнопок
+    function createButton(text, onClick) {
+        const button = document.createElement('button');
+        button.textContent = text;
+        button.className = 'custom-button';
+        button.onclick = onClick;
+        return button;
+    }
+ 
+    // Создание и отображение панелей
+    function showPanels() {
+        const panelsConfig = [
             {
-                title: 'Room Controls',
-                left: '10px',
-                top: '50px',
+                title: 'Room Settings Control (Part 1)',
+                id: 'custom-panel-1',
                 categories: [
                     {
-                        title: 'Chat',
+                        title: 'Room Access',
                         buttons: [
-                            {
-                                name: 'On',
+                            { 
+                                text: 'On', 
                                 action: () => {
-                                    console.warn("Attempting to enable chat...");
-                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === "56b1fe2ef52686f00cc00601") {
-                                        if (!MPP.client.desiredChannelSettings.chat) {
-                                            console.warn("Chat is currently disabled, enabling chat...");
-                                            MPP.client.sendArray([{
-                                                m: 'chset',
-                                                set: {
-                                                    chat: true
-                                                }
-                                            }]);
+                                    console.log(`Attempting to enable room access...`);
+                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                        if (!MPP.client.desiredChannelSettings.visible) {
+                                            console.log(`Currently room access is disabled. Trying to enable room access...`);
+                                            setTimeout(() => {
+                                                MPP.client.sendArray([{ 
+                                                    m: 'chset', 
+                                                    set: { visible: true } 
+                                                }]);
+                                                console.log(`Successfully enabled room access.`);
+                                            }, 5000);
                                         } else {
-                                            console.error("Chat is already enabled.");
+                                            console.error(`Error: Room Access is already enabled.`);
                                         }
                                     } else {
-                                        console.error("No permissions to enable chat.");
+                                        console.error(`Error: Unable to enable room access. You don't have permission.`);
                                     }
                                 }
                             },
-                            {
-                                name: 'Off',
+                            { 
+                                text: 'Off', 
                                 action: () => {
-                                    console.warn("Attempting to disable chat...");
-                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === "56b1fe2ef52686f00cc00601") {
-                                        if (MPP.client.desiredChannelSettings.chat) {
-                                            console.warn("Chat is currently enabled, disabling chat...");
-                                            MPP.client.sendArray([{
-                                                m: 'chset',
-                                                set: {
-                                                    chat: false
-                                                }
-                                            }]);
+                                    console.log(`Attempting to disable room access...`);
+                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                        if (MPP.client.desiredChannelSettings.visible) {
+                                            console.log(`Currently room access is enabled. Trying to disable room access...`);
+                                            setTimeout(() => {
+                                                MPP.client.sendArray([{ 
+                                                    m: 'chset', 
+                                                    set: { visible: false } 
+                                                }]);
+                                                console.log(`Successfully disabled room access.`);
+                                            }, 5000);
                                         } else {
-                                            console.error("Chat is already disabled.");
+                                            console.error(`Error: Room Access is already disabled.`);
                                         }
                                     } else {
-                                        console.error("No permissions to disable chat.");
+                                        console.error(`Error: Unable to disable room access. You don't have permission.`);
+                                    }
+                                }
+                            },
+                            { 
+                                text: 'Temporarily On', 
+                                action: () => {
+                                    let minutes = prompt('Enter duration in minutes to enable access:');
+                                    if (!isNaN(minutes) && minutes > 0) {
+                                        console.log(`Enabling room access for ${minutes} minutes...`);
+                                        if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                            MPP.client.sendArray([{ 
+                                                m: 'chset', 
+                                                set: { visible: true } 
+                                            }]);
+                                            setTimeout(() => {
+                                                MPP.client.sendArray([{ 
+                                                    m: 'chset', 
+                                                    set: { visible: false } 
+                                                }]);
+                                                console.log('Room access disabled after temporary period.');
+                                            }, minutes * 60000);
+                                        } else {
+                                            console.error('Error: You do not have permission to enable temporary access.');
+                                        }
+                                    } else {
+                                        console.error('Invalid input. Please enter a positive number.');
+                                    }
+                                }
+                            },
+                            { 
+                                text: 'Temporarily Off', 
+                                action: () => {
+                                    let minutes = prompt('Enter duration in minutes to disable access:');
+                                    if (!isNaN(minutes) && minutes > 0) {
+                                        console.log(`Disabling room access for ${minutes} minutes...`);
+                                        if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                            MPP.client.sendArray([{ 
+                                                m: 'chset', 
+                                                set: { visible: false } 
+                                            }]);
+                                            setTimeout(() => {
+                                                MPP.client.sendArray([{ 
+                                                    m: 'chset', 
+                                                    set: { visible: true } 
+                                                }]);
+                                                console.log('Room access enabled after temporary period.');
+                                            }, minutes * 60000);
+                                        } else {
+                                            console.error('Error: You do not have permission to disable temporary access.');
+                                        }
+                                    } else {
+                                        console.error('Invalid input. Please enter a positive number.');
                                     }
                                 }
                             }
                         ]
                     },
                     {
-                        title: 'Only the owner can play',
+                        title: 'Chat Access',
                         buttons: [
-                            {
-                                name: 'On',
-                                action: () => {
-                                    console.warn("Attemping to enable 'Only the owner can play' setting...")
-                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === "56b1fe2ef52686f00cc00601") {
-                                        if (!MPP.client.desiredChannelSettings.crownsolo) {
-                                            console.warn("'Only the owner can play' setting is currently disabled, enabling 'Only the owner can play' setting.")
+                            { text: 'On', action: () => {
+                                console.log(`Attempting to enable chat access...`)
+                                if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                    if (!MPP.client.desiredChannelSettings.chat) {
+                                        console.log(`Trying to enable chat access...`)
+                                        setTimeout(() => {
                                             MPP.client.sendArray([{
                                                 m: 'chset',
-                                                set: {
-                                                    crownsolo: true
-                                                }
-                                            }]);
-                                        } else {
-                                            console.error("'Only the owner can play' setting is already enabled.")
-                                        }
+                                                set: { chat: true }
+                                            }])
+                                            console.log(`Successfully enabled chat access...`)
+                                        }, 5000);
                                     } else {
-                                        console.error("No permissions to enable 'Only the owner can play' setting.")
-                                    }
-                                }
-                            },
-                            {
-                                name: 'Off',
-                                action: () => {
-                                    console.warn("Attemping to disable 'Only the owner can play' setting...")
-                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === "56b1fe2ef52686f00cc00601") {
-                                        if (MPP.client.desiredChannelSettings.crownsolo) {
-                                        console.warn("'Only the owner can play' setting is currently enabled, disabling 'Only the owner can play' setting.")
-                                        MPP.client.sendArray([{
-                                            m: 'chset',
-                                            set: {
-                                                crownsolo: false
-                                            }
-                                        }]);
-                                    } else {
-                                        console.error("'Only the owner can play' setting is already disabled.")
+                                        console.error(`Error: Chat access is already enabled.`)
                                     }
                                 } else {
-                                    console.error("No permissions to disable 'Only the owner can play' setting.")
+                                    console.error(`Error: Unable to enable chat access. You don't have permission.`)
                                 }
-                            }
-                        }]
+                            }},
+                            { text: 'Off', action: () => {
+                                console.log(`Attempting to disable chat access...`)
+                                if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                    if (MPP.client.desiredChannelSettings.chat) {
+                                        console.log(`Trying to disable chat access...`)
+                                        setTimeout(() => {
+                                            MPP.client.sendArray([{
+                                                m: 'chset',
+                                                set: { chat: false }
+                                            }]);
+                                            console.log(`Successfully disabled chat access...`)
+                                        }, 5000)
+                                    } else {
+                                        console.error(`Error: Chat access is already disabled.`)
+                                    }
+                                } else {
+                                    console.error(`Error: Unable to disable chat access. You don't have permission.`)
+                                }
+                            }},
+                            { text: 'Temporarily On', action: () => {
+                                let minutes = prompt('Enter duration in munutes to enable access:')
+                                if (!isNaN(minutes) && minutes > 0) {
+                                    console.log(`Enabling chat access for ${minutes} minutes...`);
+                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                        MPP.client.sendArray([{
+                                            m: 'chset',
+                                            set: { chat: true }
+                                        }]);
+                                        setTimeout(() => {
+                                            MPP.client.sendArray([{
+                                                m: 'chset',
+                                                set: { chat: false }
+                                            }]);
+                                            console.log(`Chat access disabled after temporary period.`)
+                                        }, minutes * 60000);
+                                    } else {
+                                        console.error(`Error: You do not have permission to enable temporary access.`);   
+                                    }
+                                } else {
+                                    console.error(`Invalid input. Please enter a positive number.`)
+                                }
+                            }},
+                            { text: 'Temporarily Off', action: () => {
+                                let minutes = prompt(`Enter duration in minutes to disable chat access.`)
+                                if (!isNaN(minutes) && minutes > 0) {
+                                    console.log(`Disabling chat access for ${minutes} minutes...`);
+                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                        MPP.client.sendArray([{
+                                            m: 'chset',
+                                            set: { chat: false }
+                                        }]);
+                                        setTimeout(() => {
+                                            MPP.client.sendArray([{
+                                                m: 'chset',
+                                                set: { chat: true }
+                                            }]);
+                                            console.log(`Chat access enabled after temporary period.`)
+                                        }, minutes * 60000);
+                                    } else {
+                                        console.error('Error: You do not have permission to disable temporary access.')
+                                    }
+                                } else {
+                                    console.error(`Invalid input. Please enter a positive number.`);
+                                }
+                            }}
+                        ]
                     },
                     {
-                        title: 'Limit',
+                        title: 'Piano Access',
                         buttons: [
                             {
-                                name: 'Set to',
+                                text: 'On',
                                 action: () => {
-                                    console.warn("Set the specified limit...")
-                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === "56b1fe2ef52686f00cc00601") {
-                                        const currentLimit = client.desiredChannelSettings.limit;
-                                        const newLimit = prompt(`Current limit in this room: ${currentLimit} | Please type new limit here:`, 50);
-                                        if (newLimit < 1 || newLimit > 99) {
-                                            console.error(`Unable to set the specified limit.`);
+                                    console.log(`Attempting to enable piano access...`)
+                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                        if (!MPP.client.desiredChannelSettings.crownsolo) {
+                                            console.log(`Trying to enable piano access...`)
+                                            setTimeout(() => {
+                                                MPP.client.sendArray([{
+                                                    m: 'chset',
+                                                    set: { crownsolo: true }
+                                                }]);
+                                                console.log(`Successfully enabled piano access.`)
+                                            });
                                         } else {
-                                            if (parseInt(newLimit) === currentLimit) {
-                                                console.error(`The room already has a limit of ${currentLimit} players!`);
+                                            console.error(`Error: Piano access is already enabled.`)
+                                        }
+                                    } else {
+                                        console.error(`Error: Unable to enable piano access. You don't have permission.`)
+                                    }
+                                }
+                            },
+                            {
+                                text: 'Off',
+                                action: () => {
+                                    console.log(`Attempting to disable piano access...`)
+                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                        if (MPP.client.desiredChannelSettings.crownsolo) {
+                                            console.log(`Trying to disable piano access...`)
+                                            setTimeout(() => {
+                                                MPP.client.sendArray([{
+                                                    m: 'chset',
+                                                    set: { crownsolo: false }
+                                                }]);
+                                                console.log(`Successfully disabled piano access.`)
+                                            });
+                                        } else {
+                                            console.error(`Error: Piano access is already disabled.`)
+                                        }
+                                    } else {
+                                        console.error(`Error: Unable to disable piano access. You don't have permission.`)
+                                    }
+                                }
+                            },
+                            {
+                                text: 'Temporarily On',
+                                action: () => {
+                                    let minutes = prompt('Enter duration in minutes to enable piano access.')
+                                    if (!isNaN(minutes) && minutes > 0) {
+                                        console.log(`Enabling piano access for ${minutes} minutes.`)
+                                        if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                            MPP.client.sendArray([{
+                                                m: 'chset',
+                                                set: { crownsolo: false }
+                                            }]);
+                                            setTimeout(() => {
+                                                MPP.client.sendArray([{
+                                                    m: 'chset',
+                                                    set: { crownsolo: true }
+                                                }]);
+                                                console.log(`Piano access disabled after temporary period.`)
+                                            }, minutes * 60000)
+                                        } else {
+                                            console.error(`Error: You do not have permission to enable temporary access.`)
+                                        }
+                                    } else {
+                                        console.error(`Invalid input. Please enter a positive number.`)
+                                    }
+                                }
+                            },
+                            {
+                                text: 'Temporarily Off',
+                                action: () => {
+                                    let minutes = prompt('Enter duration in minutes to disable piano access.')
+                                    if (!isNaN(minutes) && minutes > 0) {
+                                        console.log(`Disabling piano access for ${minutes} minutes.`)
+                                        if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                            MPP.client.sendArray([{
+                                                m: 'chset',
+                                                set: { crownsolo: true }
+                                            }]);
+                                            setTimeout(() => {
+                                                MPP.client.sendArray([{
+                                                    m: 'chset',
+                                                    set: { crownsolo: false }
+                                                }]);
+                                                console.log(`Piano access enabled after temporary period.`)
+                                            }, minutes * 60000)
+                                        } else {
+                                            console.error(`Error: You do not have permission to disable temporary access.`)
+                                        }
+                                    } else {
+                                        console.error(`Invalid input. Please enter a positive number.`)
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                title: 'Room Settings Control (Part 2)',
+                id: 'custom-panel-2',
+                categories: [
+                    {
+                        title: 'Room Access for bots',
+                        buttons: [
+                            {
+                                text: 'On',
+                                action: () => {
+                                    console.log(`Attempting to enable room access for bots.`)
+                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                        if (MPP.client.desiredChannelSettings.noindex) {
+                                            console.log(`Trying to enable room access for bots.`)
+                                            setTimeout(() => {
+                                                MPP.client.sendArray([{ m: 'chset', set: { noindex: false } }]);
+                                                console.log(`Room access for bots successfully enabled.`)
+                                            }, 5000)
+                                        } else {
+                                            console.error(`Error: Room access for bots is already enabled.`)
+                                        }
+                                    } else {
+                                        console.error(`Error: Unable to enable room access for bots. You do not have permission.`)
+                                    }
+                                }
+                            },
+                            {
+                                text: 'Off',
+                                action: () => {
+                                    console.log(`Attempting to disable room access for bots.`)
+                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                        if (!MPP.client.desiredChannelSettings.noindex) {
+                                            console.log(`Trying to disable room access for bots.`)
+                                            setTimeout(() => {
+                                                MPP.client.sendArray([{ m: 'chset', set: { noindex: true } }]);
+                                                console.log(`Room access for bots successfully disabled.`)
+                                            }, 5000);
+                                        } else {
+                                            console.error(`Error: Room access for bots is already disabled.`)
+                                        }
+                                    } else {
+                                        console.error(`Error: Unable to disable room access for bots. You do not have permission.`)
+                                    }
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        title: 'Room Limit for all.',
+                        buttons: [
+                            {
+                                text: 'Set Limit',
+                                action: () => {
+                                    let newLimit = prompt(`Enter new limit to this field.`);
+                                    if (newLimit === null) {
+                                        console.log('Limit change canceled.');
+                                        return;
+                                    }
+                                    
+                                    newLimit = parseInt(newLimit);
+                                    
+                                    if (isNaN(newLimit)) {
+                                        console.error('Error: Invalid input. Please enter a number.');
+                                        return;
+                                    }
+                                    
+                                    let currentLimit = MPP.client.desiredChannelSettings.limit;
+                                    
+                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                        if (newLimit < 1 || newLimit > 99) {
+                                            console.error(`Error: Unable to set limit. Enter number from 1 to 99.`);
+                                        } else {
+                                            if (newLimit === currentLimit) {
+                                                console.error(`Error: Unable to set limit. Currently limit is ${currentLimit} players!`);
                                             } else {
-                                                MPP.client.sendArray([
-                                                    {
-                                                        m: 'chset',
-                                                        set: {
-                                                            limit: parseInt(newLimit)
-                                                        }
-                                                    }
-                                                ]);
+                                                MPP.client.sendArray([{ m: 'chset', set: { limit: newLimit } }]);
+                                                console.log(`Room limit successfully set to ${newLimit}.`);
                                             }
                                         }
                                     } else {
-                                        console.error("No permissions to set new limit for this room.");
+                                        console.error(`Error: Unable to set limit. You do not have permission to set new limit for this room.`);
                                     }
                                 }
                             }
                         ]
                     },
                     {
-                        title: 'NoIndex',
+                        title: 'Room Color Settings',
                         buttons: [
                             {
-                                name: 'On',
+                                text: 'Set Room Color',
                                 action: () => {
-                                    console.warn("Attemping to enable NoIndex...")
-                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === "56b1fe2ef52686f00cc00601") {
-                                        if (!MPP.client.desiredChannelSettings.noindex) {
-                                            console.warn("NoIndex is currently disabled, enabling NoIndex...")
-                                            MPP.client.sendArray([{
-                                                m: 'chset',
-                                                set: {
-                                                    noindex: true
-                                                }
-                                            }]);
-                                        } else {
-                                            console.error(`NoIndex is already enabled.`)
-                                        }
+                                    let innerColor = prompt('Enter inner room color (HEX only):');
+                                    let outerColor = prompt('Enter outer room color (HEX only):');
+            
+                                    const hexRegex = /^#([0-9A-Fa-f]{6})$/;
+            
+                                    if (!hexRegex.test(innerColor) || !hexRegex.test(outerColor)) {
+                                        console.error('Error: Invalid HEX color format. Please enter valid HEX codes.');
+                                        return;
+                                    }
+                                    
+                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                        MPP.client.sendArray([{ m: 'chset', set: { color: innerColor, outline: outerColor } }]);
+                                        console.log(`Room colors set to inner: ${innerColor}, outer: ${outerColor}`);
                                     } else {
-                                        console.error("No permissions to enable NoIndex for this room.")
+                                        console.error('Error: You do not have permission to change room colors.');
                                     }
                                 }
                             },
                             {
-                                name: 'Off',
+                                text: 'Set Temporary Room Color',
                                 action: () => {
-                                    console.warn("Attemping to disable NoIndex...")
-                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === "56b1fe2ef52686f00cc00601") {
-                                        if (MPP.client.desiredChannelSettings.noindex) {
-                                            console.warn("NoIndex is currently enabled, disabling NoIndex...")
-                                            MPP.client.sendArray([{
-                                                m: 'chset',
-                                                set: {
-                                                    noindex: false
-                                                }
-                                            }]);
-                                        } else {
-                                            console.error(`NoIndex is already disabled.`)
-                                        }
+                                    let innerColor = prompt('Enter temporary inner room color (HEX only):');
+                                    let outerColor = prompt('Enter temporary outer room color (HEX only):');
+                                    let duration = prompt('Enter duration in minutes for temporary color change:');
+            
+                                    const hexRegex = /^#([0-9A-Fa-f]{6})$/;
+                                    
+                                    if (!hexRegex.test(innerColor) || !hexRegex.test(outerColor) || isNaN(duration) || duration <= 0) {
+                                        console.error('Error: Invalid input. Please enter valid HEX codes and duration.');
+                                        return;
+                                    }
+                                    
+                                    let defaultInnerColor = MPP.client.desiredChannelSettings.color;
+                                    let defaultOuterColor = MPP.client.desiredChannelSettings.outline;
+                                    
+                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                        MPP.client.sendArray([{ m: 'chset', set: { color: innerColor, outline: outerColor } }]);
+                                        console.log(`Temporary room colors set to inner: ${innerColor}, outer: ${outerColor} for ${duration} minutes.`);
+                                        
+                                        setTimeout(() => {
+                                            MPP.client.sendArray([{ m: 'chset', set: { color: defaultInnerColor, outline: defaultOuterColor } }]);
+                                            console.log(`Room colors reverted to inner: ${defaultInnerColor}, outer: ${defaultOuterColor}.`);
+                                        }, duration * 60000);
                                     } else {
-                                        console.error("No permissions to disable NoIndex for this room.")
+                                        console.error('Error: You do not have permission to set temporary room colors.');
                                     }
                                 }
                             }
                         ]
-                    },
+                    }
+                ]
+            },
+            {
+                title: 'Room Participants Control',
+                id: 'custom-panel-3',
+                categories: [
                     {
-                        title: 'Visible',
+                        title: 'Moderation & Security',
                         buttons: [
                             {
-                                name: 'On',
+                                text: 'Ban',
                                 action: () => {
-                                    console.warn("Attemping to enable room visibility...")
-                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === "56b1fe2ef52686f00cc00601") {
-                                        if (!MPP.client.desiredChannelSettings.visible) {
-                                            console.warn("Room visibility is currently disabled, enabling visibility...")
-                                            MPP.client.sendArray([{
-                                                m: 'chset',
-                                                set: {
-                                                    visible: true
-                                                }
-                                            }]);
-                                        } else {
-                                            console.error(`Room Visibility is already enabled.`)
+                                    let userId = prompt('Enter user ID to ban:');
+                                    let duration = prompt('Enter ban duration in minutes (0 for permanent):');
+            
+                                    if (userId && duration !== null) {
+                                        duration = parseInt(duration);
+            
+                                        if (isNaN(duration) || duration < 0) {
+                                            console.error('Error: Invalid duration. Please enter a positive number or 0.');
+                                            return;
                                         }
-                                    } else {
-                                        console.error("No permissions to enable room visibility.")
+            
+                                        if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                            let bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || [];
+                                            bannedUsers.push({ id: userId, duration: duration });
+                                            localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
+                                            
+                                            MPP.client.sendArray([{
+                                                m: 'kickban',
+                                                _id: userId,
+                                                ms: duration * 60000
+                                            }]);
+                                            console.log(`User ${userId} banned for ${duration} minutes.`);
+                                        } else {
+                                            console.error('Error: You do not have permission to ban users.');
+                                        }
                                     }
                                 }
                             },
                             {
-                                name: 'Off',
+                                text: 'Unban',
                                 action: () => {
-                                    console.warn("Attemping to disable room visibility...")
-                                    if (MPP.client.channel.crown && MPP.client.channel.crown.userId === "56b1fe2ef52686f00cc00601") {
-                                        if (MPP.client.desiredChannelSettings.visible) {
-                                            console.warn("Room visibility is currently enabled, disabling visibility...")
+                                    let userId = prompt('Enter user ID to unban:');
+            
+                                    if (userId) {
+                                        if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                            let bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || [];
+                                            bannedUsers = bannedUsers.filter(user => user.id !== userId);
+                                            localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
+                                            
                                             MPP.client.sendArray([{
-                                                m: 'chset',
-                                                set: {
-                                                    visible: false
-                                                }
+                                                m: 'unban',
+                                                _id: userId
                                             }]);
+                                            console.log(`User ${userId} has been unbanned.`);
                                         } else {
-                                            console.error(`Room Visibility is already disabled.`)
+                                            console.error('Error: You do not have permission to unban users.');
                                         }
-                                    } else {
-                                        console.error("No permissions to disable room visibility.")
+                                    }
+                                }
+                            },
+                            {
+                                text: 'Kick',
+                                action: () => {
+                                    let userId = prompt('Enter user ID to kick:');
+            
+                                    if (userId) {
+                                        if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
+                                            MPP.client.sendArray([{
+                                                m: 'kickban',
+                                                _id: userId,
+                                                ms: 0
+                                            }]);
+                                            console.log(`User ${userId} has been kicked from the room.`);
+                                        } else {
+                                            console.error('Error: You do not have permission to kick users.');
+                                        }
                                     }
                                 }
                             }
@@ -297,204 +832,149 @@ In the @require, paste the path to your file (It is advisable to put it in your 
                     }
                 ]
             }
-        ]
-    };
-    const storedSettings = loadSettings();
-
-    const dragHandleHeight = 20;
-    const dragHandleColor = 'black';
-
-    // Создаем кнопку для открытия панели 1
-    const togglePanel1Button = createToggleButton('Open Room Controls', '10px', '510px', () => togglePanel('Room Controls'));
-    document.body.appendChild(togglePanel1Button);
-
-
-    // Создаем кнопку для закрытия панели
-    const closePanelButton = createToggleButton('Close Panel', '10px', '600px', closeMenu);
-    document.body.appendChild(closePanelButton);
-
-    // Создаем всплывающее меню
-    const popupMenu = createPopupMenu();
-    document.body.appendChild(popupMenu);
-
-    // Создаем квадратик для перетаскивания
-    const dragHandle = createDragHandle();
-    popupMenu.appendChild(dragHandle);
-
-    function createToggleButton(title, left, bottom, clickHandler) {
-        const button = document.createElement('button');
-        button.innerHTML = title;
-        button.style.position = 'fixed';
-        button.style.bottom = bottom;
-        button.style.left = left;
-        button.style.zIndex = '10000';
-        button.addEventListener('click', clickHandler);
-
-        setStyles(button, {
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            padding: '15px',
-            cursor: 'pointer',
-            fontSize: '16px',
+            
+        ];
+ 
+        panelsConfig.forEach(config => {
+            const panel = createPanel(config.title, config.id, config.categories);
+            panel.style.display = 'block';
         });
-
-        return button;
+ 
+        applyStyles();
     }
-
-    function createPopupMenu() {
-        const popupMenu = document.createElement('div');
-        popupMenu.id = 'popup-menu';
-        popupMenu.style.display = 'none';
-
-        setStyles(popupMenu, {
-            position: 'fixed',
-            top: '50px',
-            left: '250px',
-            width: '200px',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
-            border: '1px solid #ccc',
-            borderRadius: '5px',
-            padding: '15px',
-            boxShadow: '0 0 10px rgba(0, 0, 0, 0.2)',
-            zIndex: '9999',
-            color: 'white',
-            userSelect: 'none', // Запрещаем выделение текста
-        });
-
-        return popupMenu;
+ 
+    // Скрытие панелей
+    function hidePanels() {
+        const panels = document.querySelectorAll('.custom-panel');
+        panels.forEach(panel => panel.style.display = 'none');
     }
-
-    function createDragHandle() {
-        const dragHandle = document.createElement('div');
-        dragHandle.id = 'drag-handle';
-
-        setStyles(dragHandle, {
-            position: 'absolute',
-            top: '0',
-            left: '0',
-            right: '0',
-            height: `${dragHandleHeight}px`,
-            backgroundColor: dragHandleColor,
-            cursor: 'grab',
-        });
-
-        dragHandle.addEventListener('mousedown', startDrag);
-
-        return dragHandle;
+ 
+    // Функция для создания выдвижной панели
+    function createSlidePanel() {
+        const slidePanel = document.createElement('div');
+        slidePanel.id = 'slide-panel';
+        slidePanel.className = 'slide-panel';
+        document.body.appendChild(slidePanel);
+ 
+        const closeButton = document.createElement('button');
+        closeButton.id = 'close-slide-panel';
+        closeButton.className = 'close-button';
+        closeButton.textContent = '✖';
+        closeButton.onclick = () => {
+            slidePanel.classList.remove('open');
+            document.getElementById('toggle-slide-panel').style.display = 'block';
+        };
+        slidePanel.appendChild(closeButton);
+ 
+        const toggleButton = document.createElement('button');
+        toggleButton.id = 'toggle-slide-panel';
+        toggleButton.className = 'toggle-button';
+        toggleButton.textContent = '☰';
+        toggleButton.onclick = () => {
+            slidePanel.classList.toggle('open');
+            toggleButton.style.display = 'none';
+            closeButton.style.display = 'block';
+        };
+        document.body.appendChild(toggleButton);
+ 
+        const panelButtons = document.createElement('div');
+        panelButtons.className = 'panel-buttons';
+        slidePanel.appendChild(panelButtons);
+ 
+        const panel1Button = createButton('Room Settings Control', () => {
+            togglePanel('custom-panel-1');
+            togglePanel('custom-panel-2');
+        }
+        );
+        const panel2Button = createButton('Room Participants Control', () => togglePanel('custom-panel-3'));
+        panelButtons.appendChild(panel1Button);
+        panelButtons.appendChild(panel2Button);
+ 
+        createStyleCustomizer(slidePanel);
     }
-
-    function setStyles(element, styles) {
-        for (const property in styles) {
-            element.style[property] = styles[property];
+ 
+    // Функция для переключения видимости панелей
+    function togglePanel(panelId) {
+        const panel = document.getElementById(panelId);
+        if (panel) {
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
         }
     }
-
-    let isDragging = false;
-    let offsetX, offsetY;
-
-    function startDrag(e) {
-        isDragging = true;
-        offsetX = e.clientX - popupMenu.offsetLeft;
-        offsetY = e.clientY - popupMenu.offsetTop;
-        document.addEventListener('mousemove', handleDrag);
-        document.addEventListener('mouseup', stopDrag);
-        popupMenu.style.cursor = 'grabbing';
-    }
-
-    function handleDrag(e) {
-        if (isDragging) {
-            const x = e.clientX - offsetX;
-            const y = e.clientY - offsetY;
-            popupMenu.style.left = `${x}px`;
-            popupMenu.style.top = `${y}px`;
-        }
-    }
-
-    function stopDrag() {
-        isDragging = false;
-        document.removeEventListener('mousemove', handleDrag);
-        document.removeEventListener('mouseup', stopDrag);
-        popupMenu.style.cursor = 'grab';
-    }
-
-    function togglePanel(panelTitle) {
-        closeMenu();
-        clearCategories();
-        const panel = storedSettings.panels.find(panel => panel.title === panelTitle);
-        openMenu(panel);
-    }
-
-    function openMenu(panel) {
-        popupMenu.style.display = 'block';
-        addCategories(panel.categories, panel.title);
-    }
-
-    function closeMenu() {
-        popupMenu.style.display = 'none';
-    }
-
-    function addCategories(categories, panelTitle) {
-        const panelNumber = storedSettings.panels.findIndex(panel => panel.title === panelTitle) + 1;
-        categories.forEach(category => {
-            const categoryContainer = document.createElement('div');
-            categoryContainer.className = 'category';
-
-            const categoryTitleElement = document.createElement('div');
-            categoryTitleElement.className = 'category-title';
-            categoryTitleElement.textContent = `${category.title}`;
-            categoryContainer.appendChild(categoryTitleElement);
-
-            const categoryButtonsContainer = document.createElement('div');
-            categoryButtonsContainer.className = 'category-buttons';
-            addButtonsToContainer(categoryButtonsContainer, category.buttons);
-
-            categoryContainer.appendChild(categoryButtonsContainer);
-            popupMenu.appendChild(categoryContainer);
+ 
+    // Функция для создания кастомизатора стилей
+    function createStyleCustomizer(parentElement) {
+        const customizer = document.createElement('div');
+        customizer.className = 'style-customizer';
+        parentElement.appendChild(customizer);
+ 
+        const styleSections = [
+            { name: 'Panel Background Color', key: 'panelBackgroundColor', type: 'color' },
+            { name: 'Panel Header Color', key: 'panelHeaderColor', type: 'color' },
+            { name: 'Panel Header Text Color', key: 'panelHeaderTextColor', type: 'color' },
+            { name: 'Button Background Color', key: 'buttonBackgroundColor', type: 'color' },
+            { name: 'Button Text Color', key: 'buttonTextColor', type: 'color' },
+            { name: 'Category Background Color', key: 'categoryBackgroundColor', type: 'color' }, /* Новый параметр */
+            { name: 'Border Radius', key: 'borderRadius', type: 'range', min: 0, max: 50, step: 1 }
+        ];
+ 
+        styleSections.forEach(section => {
+            const sectionDiv = document.createElement('div');
+            sectionDiv.className = 'style-section';
+ 
+            const label = document.createElement('label');
+            label.textContent = section.name;
+            sectionDiv.appendChild(label);
+ 
+            const input = document.createElement('input');
+            input.type = section.type;
+            input.value = getStyles()[section.key];
+            if (section.type === 'range') {
+                input.min = section.min;
+                input.max = section.max;
+                input.step = section.step;
+            }
+            input.onchange = (e) => {
+                const newStyles = getStyles();
+                newStyles[section.key] = section.type === 'range' ? `${e.target.value}px` : e.target.value;
+                setStyles(newStyles);
+            };
+            sectionDiv.appendChild(input);
+ 
+            customizer.appendChild(sectionDiv);
         });
     }
-
-    function addButtonsToContainer(container, buttons) {
-        buttons.forEach(buttonInfo => {
-            const button = document.createElement('div');
-            button.className = 'menu-button';
-            button.textContent = buttonInfo.name;
-
-            setStyles(button, {
-                border: '1px solid #ccc',
-                borderRadius: '5px',
-                margin: '5px 0',
-                padding: '5px',
-                cursor: 'pointer',
-                backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                color: 'white'
-            });
-
-            button.addEventListener('click', buttonInfo.action);
-            container.appendChild(button);
-        });
+ 
+    // Функция для перемещения элементов
+    function makeElementDraggable(element, handle) {
+        handle.onmousedown = function(e) {
+            e.preventDefault();
+            let shiftX = e.clientX - element.getBoundingClientRect().left;
+            let shiftY = e.clientY - element.getBoundingClientRect().top;
+ 
+            function moveAt(pageX, pageY) {
+                element.style.left = pageX - shiftX + 'px';
+                element.style.top = pageY - shiftY + 'px';
+            }
+ 
+            moveAt(e.pageX, e.pageY);
+ 
+            function onMouseMove(e) {
+                moveAt(e.pageX, e.pageY);
+            }
+ 
+            document.addEventListener('mousemove', onMouseMove);
+ 
+            handle.onmouseup = function() {
+                document.removeEventListener('mousemove', onMouseMove);
+                handle.onmouseup = null;
+            };
+        };
+ 
+        handle.ondragstart = function() {
+            return false;
+        };
     }
-
-    function clearCategories() {
-        const categoryContainers = document.querySelectorAll('.category');
-        categoryContainers.forEach(container => {
-            container.innerHTML = '';
-        });
-    }
-
-    function sendChat(message) {
-        MPP.chat.send(message);
-    }
-
-    function saveSettings(settings) {
-        localStorage.setItem(settingsKey, JSON.stringify(settings));
-    }
-
-    function loadSettings() {
-        const storedSettingsJson = localStorage.getItem(settingsKey);
-        return storedSettingsJson ? JSON.parse(storedSettingsJson) : defaultSettings;
-    }
-
+ 
+    // Запуск скрипта
+    setScriptActive(isScriptActive());
 })();
-*/
