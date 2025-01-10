@@ -19,7 +19,7 @@
 // @grant        GM_getValue
 // ==/UserScript==
 /* globals MPP */
- 
+
 /*---------[Author info]-------------
  [Discord: gtnntg]
  [E-Mail: developer.georgiyshvedov@mail.ru]
@@ -32,45 +32,45 @@
 --------------------------------------*/
 /*---------[RU:info]------------
 настоящая версия скрипта: 0.6.0
- 
+
 Лицензия и авторское право:
 Copyright (C) 2024  Georgiy Shvedov (developer.georgiyshvedov@mail.ru)
- 
+
 Эта программа является свободным программным обеспечением: вы можете распространять ее и/или модифицировать
 ее в соответствии с условиями MIT License.
- 
+
 Эта программа распространяется в надежде, что она будет полезной,
 но БЕЗ КАКИХ-ЛИБО ГАРАНТИЙ; даже без подразумеваемой гарантии
 ТОВАРНОГО ВИДА или ПРИГОДНОСТИ ДЛЯ ОПРЕДЕЛЕННЫХ ЦЕЛЕЙ. См.
 MIT License для получения более подробных сведений.
- 
+
 Вы должны были получить копию MIT License
 вместе с этой программой. Если нет, см.
 <https://opensource.org/licenses/MIT>.
 -----------------------------*/
- 
+
 /*---------[EN:info]------------
 Current script version: 0.6.0
- 
+
 License and Copyright:
 Copyright (C) 2024 Georgiy Shvedov (developer.georgiyshvedov@mail.ru)
- 
+
 This program is free software: you can redistribute it and/or modify
 it under the terms of the MIT License.
- 
+
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 MIT License for more details.
- 
+
 You should have received a copy of the MIT License
 along with this program. If not, see <https://opensource.org/licenses/MIT>.
 -----------------------------*/
- 
+
 //-------script-----------
 (function() {
     'use strict';
- 
+
     // CSS для панелей и кнопок
     const CSS = `
     :root {
@@ -82,7 +82,7 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
         --category-bg-color: rgba(255, 255, 255, 0.5); /* Прозрачный фон для подзаголовков */
         --border-radius: 5px; /* Закругление краев */
     }
- 
+
     .custom-panel {
         position: fixed;
         top: 20px;
@@ -96,7 +96,7 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
         overflow: hidden;
         border-radius: var(--border-radius);
     }
- 
+
     .panel-header {
         background-color: var(--panel-header-color);
         color: var(--panel-header-text-color);
@@ -105,7 +105,7 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
         cursor: move;
         border-radius: var(--border-radius) var(--border-radius) 0 0;
     }
- 
+
     .custom-button {
         background-color: var(--button-bg-color);
         color: var(--button-text-color);
@@ -118,7 +118,7 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
         width: calc(100% - 20px);
         box-sizing: border-box;
     }
- 
+
     .panel-category {
         background-color: var(--category-bg-color); /* Прозрачный фон */
         padding: 10px;
@@ -127,11 +127,11 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
         margin-bottom: 5px;
         border-radius: var(--border-radius); /* Закругленные углы */
     }
- 
+
     .panel-content {
         padding: 10px;
     }
- 
+
     .slide-panel {
         position: fixed;
         top: 0;
@@ -148,11 +148,11 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
         flex-direction: column;
         border-radius: var(--border-radius);
     }
- 
+
     .slide-panel.open {
         transform: translateX(0);
     }
- 
+
     .close-button {
         background: red;
         color: white;
@@ -165,7 +165,7 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
         border-radius: 50%;
         z-index: 1002;
     }
- 
+
     .toggle-button {
         position: fixed;
         top: 20px;
@@ -178,7 +178,7 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
         border-radius: var(--border-radius);
         z-index: 1002;
     }
- 
+
     .style-customizer {
         margin: 20px;
         padding: 10px;
@@ -187,32 +187,32 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         border-radius: var(--border-radius);
     }
- 
+
     .style-section {
         margin-bottom: 15px;
     }
- 
+
     .field-container {
         margin-bottom: 10px;
     }
- 
+
     .field-container label {
         display: block;
         margin-bottom: 5px;
     }
- 
+
     .field-container input[type="color"],
     .field-container input[type="range"] {
         width: 100%;
     }
     `;
- 
+
     // Добавление стилей в документ
     const styleSheet = document.createElement('style');
     styleSheet.type = 'text/css';
     styleSheet.innerText = CSS;
     document.head.appendChild(styleSheet);
- 
+
     // Переменные для настроек стилей
     const DEFAULT_STYLES = {
         panelBackgroundColor: 'rgba(255, 255, 255, 0.9)',
@@ -223,13 +223,13 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
         categoryBackgroundColor: 'rgba(255, 255, 255, 0.5)', /* Прозрачный фон для подзаголовков */
         borderRadius: '5px'
     };
- 
+
     // Проверка активности скрипта
     const SCRIPT_ACTIVE_KEY = 'scriptActive';
     function isScriptActive() {
         return GM_getValue(SCRIPT_ACTIVE_KEY, true);
     }
- 
+
     // Функция для активации/деактивации скрипта
     function setScriptActive(state) {
         GM_setValue(SCRIPT_ACTIVE_KEY, state);
@@ -240,17 +240,17 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
             hidePanels();
         }
     }
- 
+
     // Получение и сохранение стилей
     function getStyles() {
         return GM_getValue('panelStyles', DEFAULT_STYLES);
     }
- 
+
     function setStyles(styles) {
         GM_setValue('panelStyles', styles);
         applyStyles();
     }
- 
+
     // Применение стилей
     function applyStyles() {
         const styles = getStyles();
@@ -262,18 +262,18 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
         document.documentElement.style.setProperty('--category-bg-color', styles.categoryBackgroundColor); /* Прозрачный фон для подзаголовков */
         document.documentElement.style.setProperty('--border-radius', styles.borderRadius);
     }
- 
+
     // Создание панели
     function createPanel(title, id, categories) {
         const panel = document.createElement('div');
         panel.id = id;
         panel.className = 'custom-panel';
- 
+
         const header = document.createElement('div');
         header.className = 'panel-header';
         header.textContent = title;
         panel.appendChild(header);
- 
+
         // Создание контента для панелей
         const panelContent = document.createElement('div');
         panelContent.className = 'panel-content';
@@ -282,20 +282,20 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
             categoryHeader.className = 'panel-category';
             categoryHeader.textContent = category.title;
             panelContent.appendChild(categoryHeader);
- 
+
             category.buttons.forEach(button => {
                 const btn = createButton(button.text, button.action);
                 panelContent.appendChild(btn);
             });
         });
- 
+
         panel.appendChild(panelContent);
         document.body.appendChild(panel);
         makeElementDraggable(panel, header);
- 
+
         return panel;
     }
- 
+
     // Функция для создания кнопок
     function createButton(text, onClick) {
         const button = document.createElement('button');
@@ -304,7 +304,7 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
         button.onclick = onClick;
         return button;
     }
- 
+
     // Создание и отображение панелей
     function showPanels() {
         const panelsConfig = [
@@ -315,17 +315,17 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                     {
                         title: 'Room Access',
                         buttons: [
-                            { 
-                                text: 'On', 
+                            {
+                                text: 'On',
                                 action: () => {
                                     console.log(`Attempting to enable room access...`);
                                     if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
                                         if (!MPP.client.desiredChannelSettings.visible) {
                                             console.log(`Currently room access is disabled. Trying to enable room access...`);
                                             setTimeout(() => {
-                                                MPP.client.sendArray([{ 
-                                                    m: 'chset', 
-                                                    set: { visible: true } 
+                                                MPP.client.sendArray([{
+                                                    m: 'chset',
+                                                    set: { visible: true }
                                                 }]);
                                                 console.log(`Successfully enabled room access.`);
                                             }, 5000);
@@ -337,17 +337,17 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                                     }
                                 }
                             },
-                            { 
-                                text: 'Off', 
+                            {
+                                text: 'Off',
                                 action: () => {
                                     console.log(`Attempting to disable room access...`);
                                     if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
                                         if (MPP.client.desiredChannelSettings.visible) {
                                             console.log(`Currently room access is enabled. Trying to disable room access...`);
                                             setTimeout(() => {
-                                                MPP.client.sendArray([{ 
-                                                    m: 'chset', 
-                                                    set: { visible: false } 
+                                                MPP.client.sendArray([{
+                                                    m: 'chset',
+                                                    set: { visible: false }
                                                 }]);
                                                 console.log(`Successfully disabled room access.`);
                                             }, 5000);
@@ -359,21 +359,21 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                                     }
                                 }
                             },
-                            { 
-                                text: 'Temporarily On', 
+                            {
+                                text: 'Temporarily On',
                                 action: () => {
                                     let minutes = prompt('Enter duration in minutes to enable access:');
                                     if (!isNaN(minutes) && minutes > 0) {
                                         console.log(`Enabling room access for ${minutes} minutes...`);
                                         if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
-                                            MPP.client.sendArray([{ 
-                                                m: 'chset', 
-                                                set: { visible: true } 
+                                            MPP.client.sendArray([{
+                                                m: 'chset',
+                                                set: { visible: true }
                                             }]);
                                             setTimeout(() => {
-                                                MPP.client.sendArray([{ 
-                                                    m: 'chset', 
-                                                    set: { visible: false } 
+                                                MPP.client.sendArray([{
+                                                    m: 'chset',
+                                                    set: { visible: false }
                                                 }]);
                                                 console.log('Room access disabled after temporary period.');
                                             }, minutes * 60000);
@@ -385,21 +385,21 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                                     }
                                 }
                             },
-                            { 
-                                text: 'Temporarily Off', 
+                            {
+                                text: 'Temporarily Off',
                                 action: () => {
                                     let minutes = prompt('Enter duration in minutes to disable access:');
                                     if (!isNaN(minutes) && minutes > 0) {
                                         console.log(`Disabling room access for ${minutes} minutes...`);
                                         if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
-                                            MPP.client.sendArray([{ 
-                                                m: 'chset', 
-                                                set: { visible: false } 
+                                            MPP.client.sendArray([{
+                                                m: 'chset',
+                                                set: { visible: false }
                                             }]);
                                             setTimeout(() => {
-                                                MPP.client.sendArray([{ 
-                                                    m: 'chset', 
-                                                    set: { visible: true } 
+                                                MPP.client.sendArray([{
+                                                    m: 'chset',
+                                                    set: { visible: true }
                                                 }]);
                                                 console.log('Room access enabled after temporary period.');
                                             }, minutes * 60000);
@@ -471,7 +471,7 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                                             console.log(`Chat access disabled after temporary period.`)
                                         }, minutes * 60000);
                                     } else {
-                                        console.error(`Error: You do not have permission to enable temporary access.`);   
+                                        console.error(`Error: You do not have permission to enable temporary access.`);
                                     }
                                 } else {
                                     console.error(`Invalid input. Please enter a positive number.`)
@@ -510,12 +510,12 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                                 action: () => {
                                     console.log(`Attempting to enable piano access...`)
                                     if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
-                                        if (!MPP.client.desiredChannelSettings.crownsolo) {
+                                        if (MPP.client.desiredChannelSettings.crownsolo) {
                                             console.log(`Trying to enable piano access...`)
                                             setTimeout(() => {
                                                 MPP.client.sendArray([{
                                                     m: 'chset',
-                                                    set: { crownsolo: true }
+                                                    set: { crownsolo: false }
                                                 }]);
                                                 console.log(`Successfully enabled piano access.`)
                                             });
@@ -532,12 +532,12 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                                 action: () => {
                                     console.log(`Attempting to disable piano access...`)
                                     if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
-                                        if (MPP.client.desiredChannelSettings.crownsolo) {
+                                        if (!MPP.client.desiredChannelSettings.crownsolo) {
                                             console.log(`Trying to disable piano access...`)
                                             setTimeout(() => {
                                                 MPP.client.sendArray([{
                                                     m: 'chset',
-                                                    set: { crownsolo: false }
+                                                    set: { crownsolo: true }
                                                 }]);
                                                 console.log(`Successfully disabled piano access.`)
                                             });
@@ -663,16 +663,16 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                                         console.log('Limit change canceled.');
                                         return;
                                     }
-                                    
+
                                     newLimit = parseInt(newLimit);
-                                    
+
                                     if (isNaN(newLimit)) {
                                         console.error('Error: Invalid input. Please enter a number.');
                                         return;
                                     }
-                                    
+
                                     let currentLimit = MPP.client.desiredChannelSettings.limit;
-                                    
+
                                     if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
                                         if (newLimit < 1 || newLimit > 99) {
                                             console.error(`Error: Unable to set limit. Enter number from 1 to 99.`);
@@ -699,14 +699,14 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                                 action: () => {
                                     let innerColor = prompt('Enter inner room color (HEX only):');
                                     let outerColor = prompt('Enter outer room color (HEX only):');
-            
+
                                     const hexRegex = /^#([0-9A-Fa-f]{6})$/;
-            
+
                                     if (!hexRegex.test(innerColor) || !hexRegex.test(outerColor)) {
                                         console.error('Error: Invalid HEX color format. Please enter valid HEX codes.');
                                         return;
                                     }
-                                    
+
                                     if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
                                         MPP.client.sendArray([{ m: 'chset', set: { color: innerColor, outline: outerColor } }]);
                                         console.log(`Room colors set to inner: ${innerColor}, outer: ${outerColor}`);
@@ -721,21 +721,21 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                                     let innerColor = prompt('Enter temporary inner room color (HEX only):');
                                     let outerColor = prompt('Enter temporary outer room color (HEX only):');
                                     let duration = prompt('Enter duration in minutes for temporary color change:');
-            
+
                                     const hexRegex = /^#([0-9A-Fa-f]{6})$/;
-                                    
+
                                     if (!hexRegex.test(innerColor) || !hexRegex.test(outerColor) || isNaN(duration) || duration <= 0) {
                                         console.error('Error: Invalid input. Please enter valid HEX codes and duration.');
                                         return;
                                     }
-                                    
+
                                     let defaultInnerColor = MPP.client.desiredChannelSettings.color;
                                     let defaultOuterColor = MPP.client.desiredChannelSettings.outline;
-                                    
+
                                     if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
                                         MPP.client.sendArray([{ m: 'chset', set: { color: innerColor, outline: outerColor } }]);
                                         console.log(`Temporary room colors set to inner: ${innerColor}, outer: ${outerColor} for ${duration} minutes.`);
-                                        
+
                                         setTimeout(() => {
                                             MPP.client.sendArray([{ m: 'chset', set: { color: defaultInnerColor, outline: defaultOuterColor } }]);
                                             console.log(`Room colors reverted to inner: ${defaultInnerColor}, outer: ${defaultOuterColor}.`);
@@ -761,20 +761,20 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                                 action: () => {
                                     let userId = prompt('Enter user ID to ban:');
                                     let duration = prompt('Enter ban duration in minutes (0 for permanent):');
-            
+
                                     if (userId && duration !== null) {
                                         duration = parseInt(duration);
-            
+
                                         if (isNaN(duration) || duration < 0) {
                                             console.error('Error: Invalid duration. Please enter a positive number or 0.');
                                             return;
                                         }
-            
+
                                         if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
                                             let bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || [];
                                             bannedUsers.push({ id: userId, duration: duration });
                                             localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
-                                            
+
                                             MPP.client.sendArray([{
                                                 m: 'kickban',
                                                 _id: userId,
@@ -791,13 +791,13 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                                 text: 'Unban',
                                 action: () => {
                                     let userId = prompt('Enter user ID to unban:');
-            
+
                                     if (userId) {
                                         if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
                                             let bannedUsers = JSON.parse(localStorage.getItem('bannedUsers')) || [];
                                             bannedUsers = bannedUsers.filter(user => user.id !== userId);
                                             localStorage.setItem('bannedUsers', JSON.stringify(bannedUsers));
-                                            
+
                                             MPP.client.sendArray([{
                                                 m: 'unban',
                                                 _id: userId
@@ -813,7 +813,7 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                                 text: 'Kick',
                                 action: () => {
                                     let userId = prompt('Enter user ID to kick:');
-            
+
                                     if (userId) {
                                         if (MPP.client.channel.crown && MPP.client.channel.crown.userId === MPP.client.getOwnParticipant()._id) {
                                             MPP.client.sendArray([{
@@ -832,30 +832,30 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                     }
                 ]
             }
-            
+
         ];
- 
+
         panelsConfig.forEach(config => {
             const panel = createPanel(config.title, config.id, config.categories);
             panel.style.display = 'block';
         });
- 
+
         applyStyles();
     }
- 
+
     // Скрытие панелей
     function hidePanels() {
         const panels = document.querySelectorAll('.custom-panel');
         panels.forEach(panel => panel.style.display = 'none');
     }
- 
+
     // Функция для создания выдвижной панели
     function createSlidePanel() {
         const slidePanel = document.createElement('div');
         slidePanel.id = 'slide-panel';
         slidePanel.className = 'slide-panel';
         document.body.appendChild(slidePanel);
- 
+
         const closeButton = document.createElement('button');
         closeButton.id = 'close-slide-panel';
         closeButton.className = 'close-button';
@@ -865,7 +865,7 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
             document.getElementById('toggle-slide-panel').style.display = 'block';
         };
         slidePanel.appendChild(closeButton);
- 
+
         const toggleButton = document.createElement('button');
         toggleButton.id = 'toggle-slide-panel';
         toggleButton.className = 'toggle-button';
@@ -876,11 +876,11 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
             closeButton.style.display = 'block';
         };
         document.body.appendChild(toggleButton);
- 
+
         const panelButtons = document.createElement('div');
         panelButtons.className = 'panel-buttons';
         slidePanel.appendChild(panelButtons);
- 
+
         const panel1Button = createButton('Room Settings Control', () => {
             togglePanel('custom-panel-1');
             togglePanel('custom-panel-2');
@@ -889,10 +889,10 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
         const panel2Button = createButton('Room Participants Control', () => togglePanel('custom-panel-3'));
         panelButtons.appendChild(panel1Button);
         panelButtons.appendChild(panel2Button);
- 
+
         createStyleCustomizer(slidePanel);
     }
- 
+
     // Функция для переключения видимости панелей
     function togglePanel(panelId) {
         const panel = document.getElementById(panelId);
@@ -900,13 +900,13 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
             panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
         }
     }
- 
+
     // Функция для создания кастомизатора стилей
     function createStyleCustomizer(parentElement) {
         const customizer = document.createElement('div');
         customizer.className = 'style-customizer';
         parentElement.appendChild(customizer);
- 
+
         const styleSections = [
             { name: 'Panel Background Color', key: 'panelBackgroundColor', type: 'color' },
             { name: 'Panel Header Color', key: 'panelHeaderColor', type: 'color' },
@@ -916,15 +916,15 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
             { name: 'Category Background Color', key: 'categoryBackgroundColor', type: 'color' }, /* Новый параметр */
             { name: 'Border Radius', key: 'borderRadius', type: 'range', min: 0, max: 50, step: 1 }
         ];
- 
+
         styleSections.forEach(section => {
             const sectionDiv = document.createElement('div');
             sectionDiv.className = 'style-section';
- 
+
             const label = document.createElement('label');
             label.textContent = section.name;
             sectionDiv.appendChild(label);
- 
+
             const input = document.createElement('input');
             input.type = section.type;
             input.value = getStyles()[section.key];
@@ -939,42 +939,42 @@ along with this program. If not, see <https://opensource.org/licenses/MIT>.
                 setStyles(newStyles);
             };
             sectionDiv.appendChild(input);
- 
+
             customizer.appendChild(sectionDiv);
         });
     }
- 
+
     // Функция для перемещения элементов
     function makeElementDraggable(element, handle) {
         handle.onmousedown = function(e) {
             e.preventDefault();
             let shiftX = e.clientX - element.getBoundingClientRect().left;
             let shiftY = e.clientY - element.getBoundingClientRect().top;
- 
+
             function moveAt(pageX, pageY) {
                 element.style.left = pageX - shiftX + 'px';
                 element.style.top = pageY - shiftY + 'px';
             }
- 
+
             moveAt(e.pageX, e.pageY);
- 
+
             function onMouseMove(e) {
                 moveAt(e.pageX, e.pageY);
             }
- 
+
             document.addEventListener('mousemove', onMouseMove);
- 
+
             handle.onmouseup = function() {
                 document.removeEventListener('mousemove', onMouseMove);
                 handle.onmouseup = null;
             };
         };
- 
+
         handle.ondragstart = function() {
             return false;
         };
     }
- 
+
     // Запуск скрипта
     setScriptActive(isScriptActive());
 })();
