@@ -85,12 +85,6 @@ One of the standout features of RCP is the ability to fully customize the appear
   - Use temporary settings for short-term adjustments.
   - Apply permanent changes for long-standing room rules.
 
-## Visual Representation
-
-Below is a visual breakdown of the RCP interface as applied to MultiPlayerPiano:
-
-
-
 ### Breakdown of Visuals:
 
 - Left Panel – Visual customization options, including background, text, and button colors.
@@ -111,3 +105,20 @@ Below is a visual breakdown of the RCP interface as applied to MultiPlayerPiano:
 RCP-Room-Controls-Panel is an open-source project. Contributions, feedback, and suggestions are welcome and can be submitted via the GitHub page. By working together, we can expand and improve the functionality of the script.
 
 If you experience bugs or have ideas for additional features, feel free to open an issue or submit a pull request.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Changelog
+
+- Fixed bug with enabling/disabling piano access.
